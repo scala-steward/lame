@@ -1,6 +1,5 @@
 package gunzip_stream
 import org.scalatest._
-import akka._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
@@ -21,7 +20,7 @@ class GunzipSuite extends FunSuite with Matchers {
           }))
       )
       .map(ByteString(_))
-      .take(max)
+      .take(max.toLong)
       .via(akka.stream.scaladsl.Compression.gzip(level = 1))
 
   def gzip(data: ByteString) = {
@@ -91,7 +90,7 @@ class GunzipSuite extends FunSuite with Matchers {
         .via(
           Flow[ByteString]
             .groupedWeightedWithin(maxWeight = 1024 * 1024 * 5, 5 seconds)(
-              _.length
+              _.length.toLong
             )
             .map(bs => bs.reduce(_ ++ _).grouped(30).toList.reduce(_ ++ _))
         )

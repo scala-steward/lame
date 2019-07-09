@@ -5,7 +5,6 @@ import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import scala.annotation.tailrec
 import java.util.zip.{CRC32, Inflater, ZipException}
-import java.nio.ByteBuffer
 import scala.collection.mutable
 
 object Gunzip {
@@ -92,7 +91,7 @@ object Gunzip {
           1,
           (effectiveExpectedCompressionRatio * maxBytesPerChunk).toInt
         )
-        val (head, tail) = currentState.dataTail.splitAt(maxBytesPerChunk)
+        val (head, tail) = currentState.dataTail.splitAt(headSize)
         (new ByteReader(head), tail)
       }
     }

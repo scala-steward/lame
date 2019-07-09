@@ -4,7 +4,6 @@
 
 package lame
 import akka.util.ByteString
-import akka.util.ByteString.ByteStrings
 import scala.util.control.NoStackTrace
 
 object ByteReader {
