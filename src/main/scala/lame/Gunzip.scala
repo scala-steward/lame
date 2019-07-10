@@ -200,7 +200,7 @@ object Gunzip {
   class GunzipStage(
       maxBytesPerChunk: Int = 65536,
       expectedCompressionRatio: Double = 1.0,
-      inflater: Option[Inflater] = None
+      inflater: Option[() => Inflater] = None
   ) extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     val in = Inlet[ByteString]("lame.gunzip.in")
@@ -217,7 +217,7 @@ object Gunzip {
         )
 
         if (inflater.isDefined) {
-          state = state.copy(inflater = inflater.get)
+          state = state.copy(inflater = inflater.get.apply())
         }
 
         setHandler(
@@ -231,6 +231,10 @@ object Gunzip {
                 val emit = state.emit.toList
                 state.emit.clear()
                 emitMultiple(out, emit)
+              } else {
+                if (state.emit.isEmpty) {
+                  pull(in)
+                }
               }
             }
 
@@ -266,10 +270,10 @@ object Gunzip {
       }
   }
 
-  def gunzip(
+  def apply(
       maxBytesPerChunk: Int = 65536,
       expectedCompressionRatio: Double = 1.0,
-      customInflater: Option[Inflater] = None
+      customInflater: Option[() => Inflater] = None
   ): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(
       new GunzipStage(

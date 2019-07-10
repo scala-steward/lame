@@ -21,7 +21,7 @@ class GunzipSuite extends FunSuite with Matchers {
       )
       .map(ByteString(_))
       .take(max.toLong)
-      .via(akka.stream.scaladsl.Compression.gzip(level = 1))
+      .via(lame.Gzip())
 
   def gzip(data: ByteString) = {
     val bos = new ByteArrayOutputStream(data.length)
@@ -43,8 +43,8 @@ class GunzipSuite extends FunSuite with Matchers {
     val data2 = Await
       .result(
         Source(data)
-          .via(Compression.gzip)
-          .via(lame.Gunzip.gunzip())
+          .via(lame.Gzip())
+          .via(lame.Gunzip())
           .runWith(Sink.seq),
         Duration.Inf
       )
@@ -64,7 +64,7 @@ class GunzipSuite extends FunSuite with Matchers {
           .map { byteString =>
             ByteString(gzip(byteString))
           }
-          .via(lame.Gunzip.gunzip())
+          .via(lame.Gunzip())
           .runWith(Sink.seq),
         Duration.Inf
       )
@@ -74,7 +74,7 @@ class GunzipSuite extends FunSuite with Matchers {
     data.reduce(_ ++ _) shouldBe data2
   }
 
-  test("extremely fragmented ByteStrings input") {
+  test("fragmented ByteStrings input") {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
     val file = new File("tmp.data").toPath
@@ -95,8 +95,7 @@ class GunzipSuite extends FunSuite with Matchers {
             .map(bs => bs.reduce(_ ++ _).grouped(30).toList.reduce(_ ++ _))
         )
         .runWith(
-          lame.Gunzip
-            .gunzip()
+          lame.Gunzip()
             .toMat(Sink.ignore)(Keep.right)
         ),
       Duration.Inf
