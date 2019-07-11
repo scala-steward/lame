@@ -1,4 +1,4 @@
-package gunzip_stream
+package lame
 import org.scalatest._
 import akka.stream._
 import akka.stream.scaladsl._
