@@ -2,7 +2,8 @@ scalaVersion := "2.12.8"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream" % "2.5.23",
-  "org.scalatest" %% "scalatest" % "3.0.4"
+  "org.scalatest" %% "scalatest" % "3.0.4",
+  "com.github.samtools" % "htsjdk" % "2.19.0" % Test
 )
 
 name := "lame"
