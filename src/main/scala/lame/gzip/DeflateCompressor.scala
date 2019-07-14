@@ -17,9 +17,11 @@ object DeflateCompressor {
   def drainDeflater(
       deflater: Deflater,
       buffer: Array[Byte],
-      result: ByteStringBuilder = new ByteStringBuilder()
+      result: ByteStringBuilder = new ByteStringBuilder(),
+      flush: Boolean = false
   ): ByteString = {
-    val len = deflater.deflate(buffer)
+    val flushI = if (flush) Deflater.SYNC_FLUSH else Deflater.NO_FLUSH
+    val len = deflater.deflate(buffer, 0, buffer.length, flushI)
     if (len > 0) {
       result ++= ByteString.fromArray(buffer, 0, len)
       drainDeflater(deflater, buffer, result)

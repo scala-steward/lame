@@ -52,6 +52,7 @@ class GunzipSuite extends FunSuite with Matchers {
     println("end")
 
     data.reduce(_ ++ _) shouldBe data2
+    AS.terminate()
   }
   test("correctness on block gzip") {
     implicit val AS = akka.actor.ActorSystem()
@@ -72,6 +73,7 @@ class GunzipSuite extends FunSuite with Matchers {
     println("end")
 
     data.reduce(_ ++ _) shouldBe data2
+    AS.terminate()
   }
 
   test("fragmented ByteStrings input") {
