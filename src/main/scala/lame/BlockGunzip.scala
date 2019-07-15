@@ -155,6 +155,8 @@ object BlockGunzip {
           state = state.copy(inflater = inflater.get.apply())
         }
 
+        override def postStop = state.inflater.end()
+
         setHandler(
           in,
           new InHandler {

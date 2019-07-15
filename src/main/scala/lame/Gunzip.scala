@@ -220,6 +220,8 @@ object Gunzip {
           state = state.copy(inflater = inflater.get.apply())
         }
 
+        override def postStop(): Unit = state.inflater.end()
+
         setHandler(
           in,
           new InHandler {
