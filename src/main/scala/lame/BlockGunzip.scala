@@ -252,6 +252,12 @@ object BlockGunzip {
   def getBlockOffset(virtualFilePointer: Long): Int =
     (virtualFilePointer & OffsetMask).toInt
 
+  def shiftFileOffset(virtualFilePointer: Long, shift: Long) = {
+    val currentFileOffset = getFileOffset(virtualFilePointer)
+    val currentBlockOffset = getBlockOffset(virtualFilePointer)
+    createVirtualFileOffset(currentFileOffset+shift, currentBlockOffset)
+  }
+
   def createVirtualFileOffset(fileOffset: Long, blockOffset: Int) = {
     if (blockOffset < 0) {
       throw new RuntimeException(

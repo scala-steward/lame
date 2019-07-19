@@ -1,14 +1,20 @@
 package lame
 
 import akka.NotUsed
-import akka.stream.{Attributes}
-import akka.stream.scaladsl.Flow
+import akka.stream.{Attributes, IOResult}
+import akka.stream.scaladsl.{Flow, FileIO, Keep, Sink}
+import java.nio.file.Path
 import akka.stream.stage.{GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
 import lame.gzip.CompressionUtils.LinearGraphStage
 import lame.gzip.DeflateCompressor
 import java.util.zip.Deflater
 import java.util.zip.CRC32
+import scala.concurrent.{Future, ExecutionContext}
+import akka.stream.FlowShape
+import akka.stream.Outlet
+import akka.stream.Inlet
+import akka.stream.stage.GraphStage
 
 object BlockGzip {
 
@@ -24,8 +30,11 @@ object BlockGzip {
       crc32: CRC32
   ) {
     private val noCompressionDeflater = new Deflater(0, true)
-    def update(bs: ByteString) = copy(data = data ++ bs, 
-    uncompressedBlockOffsets= data.size :: uncompressedBlockOffsets)
+    def update(bs: ByteString) =
+      copy(
+        data = data ++ bs,
+        uncompressedBlockOffsets = data.size :: uncompressedBlockOffsets
+      )
     def needsInput = data.size < MaxUncompressed
     def clear = copy(emit = ByteString.empty, uncompressedBlockOffsets = Nil)
     def compress =
@@ -103,12 +112,51 @@ object BlockGzip {
       }
   }
 
+  private def int64LE(i: Long): ByteString =
+    ByteString(i, i >> 8, i >> 16, i >> 24, i >> 32, i >> 40, i >> 48, i >> 56)
+
+  def toFile(
+      path: Path,
+      indexPath: Path,
+      compressionLevel: Int = 1,
+      customDeflater: Option[() => Deflater] = None
+  )(
+      implicit ec: ExecutionContext
+  ): Sink[ByteString, Future[(IOResult, IOResult)]] = {
+    val fileSink = Flow[(ByteString, List[Long])]
+      .map(_._1)
+      .toMat(FileIO.toPath(path))(Keep.right)
+    val flow = apply(compressionLevel, customDeflater)
+    flow
+      .alsoToMat(fileSink)(Keep.right)
+      .mapConcat(_._2)
+      .zipWithIndex
+      .map {
+        case (vfp, idx) =>
+          val blockAddress = BlockGunzip.getFileOffset(vfp)
+          (blockAddress, vfp, idx)
+      }
+      .via(adjacentSpan(_._1))
+      .map { block =>
+        val (_, vfp1, idx1) = block.head
+        int64LE(idx1) ++ int64LE(vfp1)
+      }
+      .toMat(FileIO.toPath(indexPath))(Keep.both)
+      .mapMaterializedValue {
+        case (f1, f2) =>
+          for {
+            r1 <- f1
+            r2 <- f2
+          } yield (r1, r2)
+      }
+  }
+
   def apply(
       compressionLevel: Int = 1,
       customDeflater: Option[() => Deflater] = None
   ): Flow[ByteString, (ByteString, List[Long]), NotUsed] =
     Flow.fromGraph {
-      new LinearGraphStage[ByteString,(ByteString, List[Long])] {
+      new LinearGraphStage[ByteString, (ByteString, List[Long])] {
         override def createLogic(
             inheritedAttributes: Attributes
         ): GraphStageLogic =
@@ -126,11 +174,10 @@ object BlockGzip {
 
             var compressedStreamOffset = 0L
 
-            def makeFilePointers() = 
-              state.uncompressedBlockOffsets.reverse.map{ off =>
-                BlockGunzip.createVirtualFileOffset(compressedStreamOffset,off)
+            def makeFilePointers() =
+              state.uncompressedBlockOffsets.reverse.map { off =>
+                BlockGunzip.createVirtualFileOffset(compressedStreamOffset, off)
               }
-            
 
             val bgzipTrailer = ByteString(
               0x1f, 0x8b, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x06,
@@ -144,7 +191,7 @@ object BlockGzip {
                 state = state.compress
               }
               if (state.emit.nonEmpty && isAvailable(out)) {
-                push(out, (state.emit , makeFilePointers()))
+                push(out, (state.emit, makeFilePointers()))
                 compressedStreamOffset += state.emit.size
                 state = state.clear
               }
@@ -156,7 +203,7 @@ object BlockGzip {
 
             override def onPull(): Unit = {
               if (state.emit.nonEmpty) {
-                push(out, (state.emit,makeFilePointers()))
+                push(out, (state.emit, makeFilePointers()))
                 compressedStreamOffset += state.emit.size
                 state = state.clear
               }
@@ -186,5 +233,46 @@ object BlockGzip {
           }
       }
     }
+
+  private[lame] def adjacentSpan[T, K](key: T => K): Flow[T, Seq[T], NotUsed] =
+    Flow.fromGraph(new GraphStage[FlowShape[T, Seq[T]]] {
+      val in: Inlet[T] = Inlet("lame.adjacentSpanIn")
+      val out: Outlet[Seq[T]] = Outlet("lame.adjacentSpanOut")
+
+      override val shape = FlowShape.of(in, out)
+
+      override def createLogic(attr: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) {
+
+          val buffer = scala.collection.mutable.ArrayBuffer[T]()
+
+          setHandler(
+            in,
+            new InHandler {
+              override def onUpstreamFinish(): Unit = {
+                emit(out, buffer.toList)
+                complete(out)
+              }
+              override def onPush(): Unit = {
+                val elem = grab(in)
+                if (buffer.isEmpty || key(buffer.head) == key(elem)) {
+                  buffer.append(elem)
+                  pull(in)
+                } else {
+                  val k = buffer.toList
+                  buffer.clear
+                  buffer.append(elem)
+                  push(out, k)
+                }
+              }
+            }
+          )
+          setHandler(out, new OutHandler {
+            override def onPull(): Unit = {
+              pull(in)
+            }
+          })
+        }
+    })
 
 }
