@@ -20,6 +20,12 @@ object CompressionUtils {
     val out = Outlet[T](Logging.simpleName(this) + ".out")
     override val shape = FlowShape(in, out)
   }
+ 
+  abstract class LinearGraphStage[I,O] extends GraphStage[FlowShape[I, O]] {
+    val in = Inlet[I](Logging.simpleName(this) + ".in")
+    val out = Outlet[O](Logging.simpleName(this) + ".out")
+    override val shape = FlowShape(in, out)
+  }
 
   /**
     * Creates a flow from a compressor constructor.

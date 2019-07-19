@@ -5,7 +5,7 @@ import akka.stream.{Attributes}
 import akka.stream.scaladsl.Flow
 import akka.stream.stage.{GraphStageLogic, InHandler, OutHandler}
 import akka.util.ByteString
-import lame.gzip.CompressionUtils.SimpleLinearGraphStage
+import lame.gzip.CompressionUtils.LinearGraphStage
 import lame.gzip.DeflateCompressor
 import java.util.zip.Deflater
 import java.util.zip.CRC32
@@ -19,13 +19,15 @@ object BlockGzip {
   case class State(
       data: ByteString,
       emit: ByteString,
+      uncompressedBlockOffsets: List[Int],
       deflater: Deflater,
       crc32: CRC32
   ) {
     private val noCompressionDeflater = new Deflater(0, true)
-    def update(bs: ByteString) = copy(data = data ++ bs)
+    def update(bs: ByteString) = copy(data = data ++ bs, 
+    uncompressedBlockOffsets= data.size :: uncompressedBlockOffsets)
     def needsInput = data.size < MaxUncompressed
-    def clear = copy(emit = ByteString.empty)
+    def clear = copy(emit = ByteString.empty, uncompressedBlockOffsets = Nil)
     def compress =
       if (data.isEmpty)
         this
@@ -93,6 +95,7 @@ object BlockGzip {
         State(
           data = byteReader.remainingData,
           emit = emit ++ block,
+          uncompressedBlockOffsets = uncompressedBlockOffsets,
           deflater = deflater,
           crc32 = crc32
         )
@@ -103,9 +106,9 @@ object BlockGzip {
   def apply(
       compressionLevel: Int = 1,
       customDeflater: Option[() => Deflater] = None
-  ): Flow[ByteString, ByteString, NotUsed] =
+  ): Flow[ByteString, (ByteString, List[Long]), NotUsed] =
     Flow.fromGraph {
-      new SimpleLinearGraphStage[ByteString] {
+      new LinearGraphStage[ByteString,(ByteString, List[Long])] {
         override def createLogic(
             inheritedAttributes: Attributes
         ): GraphStageLogic =
@@ -114,11 +117,20 @@ object BlockGzip {
             var state = State(
               ByteString.empty,
               ByteString.empty,
+              Nil,
               customDeflater.getOrElse(
                 () => new Deflater(compressionLevel, true)
               )(),
               new CRC32
             )
+
+            var compressedStreamOffset = 0L
+
+            def makeFilePointers() = 
+              state.uncompressedBlockOffsets.reverse.map{ off =>
+                BlockGunzip.createVirtualFileOffset(compressedStreamOffset,off)
+              }
+            
 
             val bgzipTrailer = ByteString(
               0x1f, 0x8b, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x06,
@@ -132,7 +144,8 @@ object BlockGzip {
                 state = state.compress
               }
               if (state.emit.nonEmpty && isAvailable(out)) {
-                push(out, state.emit)
+                push(out, (state.emit , makeFilePointers()))
+                compressedStreamOffset += state.emit.size
                 state = state.clear
               }
 
@@ -143,7 +156,8 @@ object BlockGzip {
 
             override def onPull(): Unit = {
               if (state.emit.nonEmpty) {
-                push(out, state.emit)
+                push(out, (state.emit,makeFilePointers()))
+                compressedStreamOffset += state.emit.size
                 state = state.clear
               }
               if (!hasBeenPulled(in) && state.needsInput) {
@@ -156,10 +170,12 @@ object BlockGzip {
                 state = state.compress
               }
               if (state.emit.nonEmpty) {
-                emit(out, state.emit ++ bgzipTrailer)
+                emit(out, (state.emit ++ bgzipTrailer, makeFilePointers()))
+                compressedStreamOffset += (state.emit.size + bgzipTrailer.size)
                 state = state.clear
               } else {
-                emit(out, bgzipTrailer)
+                emit(out, (bgzipTrailer, makeFilePointers()))
+                compressedStreamOffset += bgzipTrailer.size
               }
               completeStage()
             }
