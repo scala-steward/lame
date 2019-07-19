@@ -59,13 +59,13 @@ class BlockGzipSuite extends FunSuite with Matchers {
     val data2 = Await
       .result(
         Source
-          .apply(List(raw,raw,raw))
+          .apply(List(raw, raw, raw))
           .via(lame.BlockGzip())
           .runWith(Sink.seq),
         Duration.Inf
       )
 
-    data2.flatMap(_._2) shouldBe List(0L, 256L,512L)
+    data2.flatMap(_._2) shouldBe List(0L, 256L, 512L)
 
     AS.terminate()
   }
@@ -116,7 +116,9 @@ class BlockGzipSuite extends FunSuite with Matchers {
             .sourceFromFactory(data2.flatMap(_._2).apply(i))(
               fileOffSet =>
                 Source
-                  .single(data2.map(_._1).toList.reduce(_ ++ _).drop(fileOffSet.toInt))
+                  .single(
+                    data2.map(_._1).toList.reduce(_ ++ _).drop(fileOffSet.toInt)
+                  )
             )
             .runWith(Sink.seq),
           Duration.Inf
@@ -154,7 +156,9 @@ class BlockGzipSuite extends FunSuite with Matchers {
             .sourceFromFactory(data2.flatMap(_._2).apply(i))(
               fileOffSet =>
                 Source
-                  .single(data2.map(_._1).toList.reduce(_ ++ _).drop(fileOffSet.toInt))
+                  .single(
+                    data2.map(_._1).toList.reduce(_ ++ _).drop(fileOffSet.toInt)
+                  )
             )
             .runWith(Sink.seq),
           Duration.Inf
@@ -241,6 +245,30 @@ class BlockGzipSuite extends FunSuite with Matchers {
 
     (raw ++ raw ++ raw) shouldBe data2
     AS.terminate()
+  }
+
+  test("adjacent span") {
+    implicit val AS = akka.actor.ActorSystem()
+    implicit val mat = ActorMaterializer()
+    val a1 = List("a", "a", "b", "c", "d", "e", "h", "h")
+    val f =
+      Await.result(
+        Source(a1).via(BlockGzip.adjacentSpan(_.head)).runWith(Sink.seq),
+        20 seconds
+      )
+    f should equal(
+      List(
+        List("a", "a"),
+        List("b"),
+        List("c"),
+        List("d"),
+        List("e"),
+        List("h", "h")
+      )
+    )
+
+    AS.terminate
+
   }
 
 }
