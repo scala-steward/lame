@@ -115,17 +115,15 @@ object BlockGzip {
   private def int64LE(i: Long): ByteString =
     ByteString(i, i >> 8, i >> 16, i >> 24, i >> 32, i >> 40, i >> 48, i >> 56)
 
-  def toFile(
-      path: Path,
-      indexPath: Path,
+  def sinkWithIndex[Mat1, Mat2](
+      dataSink: Sink[ByteString, Mat1],
+      indexSink: Sink[ByteString, Mat2],
       compressionLevel: Int = 1,
       customDeflater: Option[() => Deflater] = None
-  )(
-      implicit ec: ExecutionContext
-  ): Sink[ByteString, Future[(IOResult, IOResult)]] = {
+  ): Sink[ByteString, (Mat1, Mat2)] = {
     val fileSink = Flow[(ByteString, List[Long])]
       .map(_._1)
-      .toMat(FileIO.toPath(path))(Keep.right)
+      .toMat(dataSink)(Keep.right)
     val flow = apply(compressionLevel, customDeflater)
     flow
       .alsoToMat(fileSink)(Keep.right)
@@ -139,17 +137,51 @@ object BlockGzip {
       .via(adjacentSpan(_._1))
       .map { block =>
         val (_, vfp1, idx1) = block.head
-        int64LE(idx1) ++ int64LE(vfp1)
+        val (_, _, idx2) = block.last
+        int64LE(idx1) ++ int64LE(idx2) ++ int64LE(vfp1)
       }
-      .toMat(FileIO.toPath(indexPath))(Keep.both)
-      .mapMaterializedValue {
-        case (f1, f2) =>
-          for {
-            r1 <- f1
-            r2 <- f2
-          } yield (r1, r2)
-      }
+      .toMat(indexSink)(Keep.both)
   }
+
+  def file(
+      data: Path,
+      index: Path,
+      compressionLevel: Int = 1,
+      customDeflater: Option[() => Deflater] = None
+  )(
+      implicit ec: ExecutionContext
+  ): Sink[ByteString, Future[(IOResult, IOResult)]] =
+    sinkWithIndex(
+      dataSink = FileIO.toPath(data),
+      indexSink = FileIO.toPath(index),
+      compressionLevel,
+      customDeflater
+    ).mapMaterializedValue {
+      case (f1, f2) =>
+        for {
+          r1 <- f1
+          r2 <- f2
+        } yield (r1, r2)
+    }
+
+  def sinkWithIndexAsByteString[Mat](
+      data: Sink[ByteString, Mat],
+      compressionLevel: Int = 1,
+      customDeflater: Option[() => Deflater] = None
+  )(
+      implicit ec: ExecutionContext
+  ): Sink[ByteString, Future[(Mat, ByteString)]] =
+    sinkWithIndex(
+      dataSink = data,
+      indexSink = Sink.seq[ByteString],
+      compressionLevel,
+      customDeflater
+    ).mapMaterializedValue {
+      case (dataMat, futureIndex) =>
+        for {
+          indexBytes <- futureIndex
+        } yield (dataMat, indexBytes.foldLeft(ByteString.empty)(_ ++ _))
+    }
 
   def apply(
       compressionLevel: Int = 1,

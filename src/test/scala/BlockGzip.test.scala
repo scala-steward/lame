@@ -133,11 +133,13 @@ class BlockGzipSuite extends FunSuite with Matchers {
   test("addressing - 3x 48KB") {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
-    val raw = randomData(1024 * 48)
+    val raw1 = randomData(1024 * 48)
+    val raw2 = randomData(1024 * 48)
+    val raw3 = randomData(1024 * 48)
     val data2 = Await
       .result(
         Source
-          .apply(List(raw, raw, raw))
+          .apply(List(raw1, raw2, raw3))
           .via(lame.BlockGzip())
           .runWith(Sink.seq),
         Duration.Inf
@@ -164,9 +166,9 @@ class BlockGzipSuite extends FunSuite with Matchers {
           Duration.Inf
         )
         .reduce(_ ++ _)
-        .take(raw.size)
+        .take(raw1.size)
     }
-    raw_blocks shouldBe Seq(raw, raw, raw)
+    raw_blocks shouldBe Seq(raw1, raw2, raw3)
 
     AS.terminate()
   }
