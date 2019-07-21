@@ -60,22 +60,24 @@ val commonSettings = Seq(
         </developers>
   },
   fork := true,
-  cancelable in Global := true
+  cancelable in Global := true,
+  version := "0.0.1-SNAPSHOT"
 )
 
 commonSettings
 
-libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-stream" % "2.5.23",
-  "org.scalatest" %% "scalatest" % "3.0.4" % Test,
-  "com.github.samtools" % "htsjdk" % "2.19.0" % Test
-)
+publishArtifact := false
 
-name := "lame"
-
-version := "0.0.1"
-
-lazy val root = project in file(".")
+lazy val core = (project in file("core"))
+  .settings(commonSettings)
+  .settings(
+    name := "lame",
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-stream" % "2.5.23",
+      "org.scalatest" %% "scalatest" % "3.0.4" % Test,
+      "com.github.samtools" % "htsjdk" % "2.19.0" % Test
+    )
+  )
 
 lazy val bgzipIndex = (project in file("bgzip-index"))
   .settings(commonSettings: _*)
@@ -86,4 +88,6 @@ lazy val bgzipIndex = (project in file("bgzip-index"))
       "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     )
   )
-  .dependsOn(root)
+  .dependsOn(core)
+
+lazy val root = (project in file(".")).aggregate(core, bgzipIndex)
