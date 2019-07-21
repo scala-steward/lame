@@ -112,7 +112,7 @@ object BlockGzip {
       }
   }
 
-  private def int64LE(i: Long): ByteString =
+  private[lame] def int64LE(i: Long): ByteString =
     ByteString(i, i >> 8, i >> 16, i >> 24, i >> 32, i >> 40, i >> 48, i >> 56)
 
   def sinkWithIndex[Mat1, Mat2](
