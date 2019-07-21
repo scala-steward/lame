@@ -53,7 +53,7 @@ object Index {
         .map {
           case Block(fromIdx, toIdx, vfp) =>
             val f = fromIdx + indexOffSet
-            val t = toIdx + indexOffSet
+            val t = toIdx - 1 + indexOffSet
             val v = BlockGunzip.shiftFileOffset(vfp, fileOffSet)
             BlockGzip.int64LE(f) ++
               BlockGzip.int64LE(t) ++

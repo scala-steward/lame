@@ -102,10 +102,11 @@ class BlockGzipSuite extends FunSuite with Matchers {
         (compressedData.length.toLong, index)
       )
     )
+
     val concatenetedCompressedData = compressedData ++ compressedData ++ compressedData
 
     val parsedIndex = Index(concatenatedIndex)
-    parsedIndex.length shouldBe 13  
+    parsedIndex.length shouldBe 12  
     parsedIndex.query(0L).get shouldBe 0L
     parsedIndex.query(1L).get shouldBe 0L
     parsedIndex.query(2L).get shouldBe 4295000100L
@@ -115,6 +116,7 @@ class BlockGzipSuite extends FunSuite with Matchers {
     parsedIndex.query(6L).isDefined shouldBe true
     parsedIndex.query(7L).isDefined shouldBe true
     parsedIndex.query(8L).isDefined shouldBe true
+    parsedIndex.query(12L).isDefined shouldBe false
     parsedIndex.query(-1L) shouldBe None
 
     def get(i: Long) = {
