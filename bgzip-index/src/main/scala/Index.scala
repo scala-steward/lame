@@ -42,7 +42,7 @@ object Index {
     reader.readLongLE() + 1
   }
 
-  def concatenate(indices: Seq[(Long, ByteString)]) = {
+  def concatenate(indices: Iterator[(Long, ByteString)]) = {
 
     def shiftIndex(
         fileOffSet: Long,

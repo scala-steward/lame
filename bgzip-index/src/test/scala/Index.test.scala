@@ -100,7 +100,7 @@ class BlockGzipSuite extends FunSuite with Matchers {
         (compressedData.length.toLong, index),
         (compressedData.length.toLong, index),
         (compressedData.length.toLong, index)
-      )
+      ).iterator
     )
 
     val concatenetedCompressedData = compressedData ++ compressedData ++ compressedData
