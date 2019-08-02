@@ -52,6 +52,22 @@ class BlockGzipSuite extends FunSuite with Matchers {
 
     AS.terminate()
   }
+  test("addressing - empty") {
+    implicit val AS = akka.actor.ActorSystem()
+    implicit val mat = ActorMaterializer()
+    val data2 = Await
+      .result(
+        Source
+          .apply(List())
+          .via(lame.BlockGzip())
+          .runWith(Sink.seq),
+        Duration.Inf
+      )
+
+    data2.flatMap(_._2) shouldBe List()
+
+    AS.terminate()
+  }
   test("addressing - 256 * 3") {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()

@@ -11,17 +11,25 @@ case class Index(
     tree: Tree[IntervalTree.IntervalTreeElement[Long, Index.Block]],
     length: Long
 ) {
-  def query(queryIdx: Long): Option[Long] = {
+  def query(queryIdx: Long): Option[Index.QueryResult] = {
     IntervalTree
       .lookup1(queryIdx, queryIdx + 1, tree)
       .headOption
-      .map(_.virtualFilePointer)
+      .map {
+        case Index.Block(from, _, vfp) =>
+          Index.QueryResult(vfp, queryIdx - from)
+      }
   }
 }
 
 object Index {
-  private[lame] case class Block(from: Long, to: Long, virtualFilePointer: Long)
+  case class Block(from: Long, to: Long, virtualFilePointer: Long)
       extends LongInterval
+
+  case class QueryResult(
+      virtualFilePointer: Long,
+      numberOfSkippableElements: Long
+  )
 
   def blocks(data: ByteString): Iterator[Block] = {
     val byteReader = new ByteReader(data)
@@ -37,9 +45,12 @@ object Index {
   }
 
   def length(data: ByteString) = {
+    if (data.isEmpty) 0L 
+    else {
     val reader = new ByteReader(data)
     reader.skip(((data.size / 24) - 1) * 24 + 8)
     reader.readLongLE() + 1
+    }
   }
 
   def concatenate(indices: Iterator[(Long, ByteString)]) = {
@@ -61,18 +72,20 @@ object Index {
         }
         .foldLeft(ByteString.empty)(_ ++ _)
 
-    indices.foldLeft((0L, 0L, ByteString.empty)) {
-      case ((lastFileOffSet, lastIdx, accum), (dataFileLength, indexData)) =>
-        val shifted = shiftIndex(
-          fileOffSet = lastFileOffSet,
-          indexOffSet = lastIdx,
-          data = indexData
-        )
-        val newFileOffset = lastFileOffSet + dataFileLength
-        val newLastIdx = lastIdx + length(indexData)
-        val newAccum = accum ++ shifted
-        (newFileOffset, newLastIdx, newAccum)
-    }._3
+    indices
+      .foldLeft((0L, 0L, ByteString.empty)) {
+        case ((lastFileOffSet, lastIdx, accum), (dataFileLength, indexData)) =>
+          val shifted = shiftIndex(
+            fileOffSet = lastFileOffSet,
+            indexOffSet = lastIdx,
+            data = indexData
+          )
+          val newFileOffset = lastFileOffSet + dataFileLength
+          val newLastIdx = lastIdx + length(indexData)
+          val newAccum = accum ++ shifted
+          (newFileOffset, newLastIdx, newAccum)
+      }
+      ._3
   }
 
   def apply(data: ByteString): Index = {

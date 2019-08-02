@@ -115,18 +115,12 @@ object BlockGzip {
   private[lame] def int64LE(i: Long): ByteString =
     ByteString(i, i >> 8, i >> 16, i >> 24, i >> 32, i >> 40, i >> 48, i >> 56)
 
-  def sinkWithIndex[Mat1, Mat2](
-      dataSink: Sink[ByteString, Mat1],
+  def flowWithIndex[Mat2](
       indexSink: Sink[ByteString, Mat2],
       compressionLevel: Int = 1,
       customDeflater: Option[() => Deflater] = None
-  ): Sink[ByteString, (Mat1, Mat2)] = {
-    val fileSink = Flow[(ByteString, List[Long])]
-      .map(_._1)
-      .toMat(dataSink)(Keep.right)
-    val flow = apply(compressionLevel, customDeflater)
-    flow
-      .alsoToMat(fileSink)(Keep.right)
+  ): Flow[ByteString, ByteString, Mat2] = {
+    val indexSink2 = Flow[(ByteString, List[Long])]
       .mapConcat(_._2)
       .zipWithIndex
       .map {
@@ -135,13 +129,30 @@ object BlockGzip {
           (blockAddress, vfp, idx)
       }
       .via(adjacentSpan(_._1))
+      .filter(_.nonEmpty)
       .map { block =>
         val (_, vfp1, idx1) = block.head
         val (_, _, idx2) = block.last
         int64LE(idx1) ++ int64LE(idx2) ++ int64LE(vfp1)
       }
       .toMat(indexSink)(Keep.both)
+
+    apply(compressionLevel, customDeflater)
+      .alsoToMat(indexSink2)(Keep.right)
+      .map(_._1)
+      .mapMaterializedValue(_._2)
+
   }
+
+  def sinkWithIndex[Mat1, Mat2](
+      dataSink: Sink[ByteString, Mat1],
+      indexSink: Sink[ByteString, Mat2],
+      compressionLevel: Int = 1,
+      customDeflater: Option[() => Deflater] = None
+  ): Sink[ByteString, (Mat1, Mat2)] =
+    flowWithIndex(indexSink, compressionLevel, customDeflater)
+      .toMat(dataSink)(Keep.both)
+      .mapMaterializedValue { case (a, b) => (b, a) }
 
   def file(
       data: Path,
