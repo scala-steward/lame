@@ -61,7 +61,7 @@ val commonSettings = Seq(
   },
   fork := true,
   cancelable in Global := true,
-  version := "0.0.1-SNAPSHOT"
+  version := "0.0.1"
 )
 
 commonSettings
