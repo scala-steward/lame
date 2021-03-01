@@ -3,7 +3,6 @@ package lame.index
 import intervaltree._
 import akka.util.ByteString
 import lame.ByteReader
-import spire.std.long._
 import lame.BlockGunzip
 import lame.BlockGzip
 
@@ -45,11 +44,11 @@ object Index {
   }
 
   def length(data: ByteString) = {
-    if (data.isEmpty) 0L 
+    if (data.isEmpty) 0L
     else {
-    val reader = new ByteReader(data)
-    reader.skip(((data.size / 24) - 1) * 24 + 8)
-    reader.readLongLE() + 1
+      val reader = new ByteReader(data)
+      reader.skip(((data.size / 24) - 1) * 24 + 8)
+      reader.readLongLE() + 1
     }
   }
 

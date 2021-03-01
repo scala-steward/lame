@@ -1,5 +1,6 @@
 package lame
-import org.scalatest._
+import org.scalatest.funsuite._
+import org.scalatest.matchers.should._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
@@ -9,7 +10,7 @@ import java.io.File
 import java.io.ByteArrayOutputStream
 import java.nio.channels.Channels
 
-class GunzipSuite extends FunSuite with Matchers {
+class GunzipSuite extends AnyFunSuite with Matchers {
   def randomData(max: Int) =
     Source
       .unfold(new scala.util.Random)(
@@ -97,14 +98,15 @@ class GunzipSuite extends FunSuite with Matchers {
             .map(bs => bs.reduce(_ ++ _).grouped(30).toList.reduce(_ ++ _))
         )
         .runWith(
-          lame.Gunzip()
+          lame
+            .Gunzip()
             .toMat(Sink.ignore)(Keep.right)
         ),
       Duration.Inf
     )
     println((System.nanoTime - t1) * 1e-9)
     println("done")
-    AS.terminate
+    AS.terminate()
 
   }
 }

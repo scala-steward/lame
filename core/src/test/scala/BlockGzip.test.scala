@@ -1,12 +1,13 @@
 package lame
-import org.scalatest._
+import org.scalatest.funsuite._
+import org.scalatest.matchers.should._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class BlockGzipSuite extends FunSuite with Matchers {
+class BlockGzipSuite extends AnyFunSuite with Matchers {
   def randomData(size: Int) = {
     val random = new scala.util.Random
     val buf = Array.fill[Byte](size)(0)
@@ -285,7 +286,7 @@ class BlockGzipSuite extends FunSuite with Matchers {
       )
     )
 
-    AS.terminate
+    AS.terminate()
 
   }
 

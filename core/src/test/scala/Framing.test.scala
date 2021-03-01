@@ -1,12 +1,13 @@
 package lame
-import org.scalatest._
+import org.scalatest.funsuite._
+import org.scalatest.matchers.should._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class FramingSuite extends FunSuite with Matchers {
+class FramingSuite extends AnyFunSuite with Matchers {
 
   test("correctness") {
     implicit val AS = akka.actor.ActorSystem()
@@ -32,7 +33,7 @@ class FramingSuite extends FunSuite with Matchers {
       )
 
     split.map(_.utf8String) shouldBe Seq("a", "", "aaa", "", "aaaaaa", "a")
-    AS.terminate
+    AS.terminate()
   }
 
 }

@@ -1,3 +1,6 @@
 target/
 .bloop/
 .metals/
+.bsp/sbt.json
+.vscode/settings.json
+core/tmp.data

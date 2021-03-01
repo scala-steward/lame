@@ -303,7 +303,7 @@ object BlockGzip {
                   pull(in)
                 } else {
                   val k = buffer.toList
-                  buffer.clear
+                  buffer.clear()
                   buffer.append(elem)
                   push(out, k)
                 }

@@ -1,6 +1,7 @@
 package lame.index
 
-import org.scalatest._
+import org.scalatest.funsuite._
+import org.scalatest.matchers.should._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
@@ -10,7 +11,7 @@ import lame.BlockGzip
 import scala.concurrent.ExecutionContext
 import lame.BlockGunzip
 
-class BlockGzipSuite extends FunSuite with Matchers {
+class BlockGzipSuite extends AnyFunSuite with Matchers {
   implicit val ec = ExecutionContext.global
   def randomData(size: Int) = {
     val random = new scala.util.Random
@@ -22,7 +23,7 @@ class BlockGzipSuite extends FunSuite with Matchers {
   test("addressing - empty ") {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
-    
+
     val (_, index) = Await
       .result(
         Source

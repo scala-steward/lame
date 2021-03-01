@@ -155,7 +155,7 @@ object BlockGunzip {
           state = state.copy(inflater = inflater.get.apply())
         }
 
-        override def postStop = state.inflater.end()
+        override def postStop() = state.inflater.end()
 
         setHandler(
           in,
@@ -255,7 +255,7 @@ object BlockGunzip {
   def shiftFileOffset(virtualFilePointer: Long, shift: Long) = {
     val currentFileOffset = getFileOffset(virtualFilePointer)
     val currentBlockOffset = getBlockOffset(virtualFilePointer)
-    createVirtualFileOffset(currentFileOffset+shift, currentBlockOffset)
+    createVirtualFileOffset(currentFileOffset + shift, currentBlockOffset)
   }
 
   def createVirtualFileOffset(fileOffset: Long, blockOffset: Int) = {

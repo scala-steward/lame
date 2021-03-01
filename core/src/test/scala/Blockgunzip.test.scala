@@ -1,32 +1,36 @@
 package lame
-import org.scalatest._
+import org.scalatest.funsuite._
+import org.scalatest.matchers.should._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class BlockGunzipSuite extends FunSuite with Matchers {
-  def randomData(size:Int) ={
+class BlockGunzipSuite extends AnyFunSuite with Matchers {
+  def randomData(size: Int) = {
     val random = new scala.util.Random
     val buf = Array.fill[Byte](size)(0)
-            random.nextBytes(buf)
+    random.nextBytes(buf)
     val os = new java.io.ByteArrayOutputStream(8192)
-    val bos = new htsjdk.samtools.util.BlockCompressedOutputStream(os,null.asInstanceOf[java.io.File])
+    val bos = new htsjdk.samtools.util.BlockCompressedOutputStream(
+      os,
+      null.asInstanceOf[java.io.File]
+    )
     bos.write(buf)
     bos.close
-    (ByteString(buf),ByteString(os.toByteArray()))
+    (ByteString(buf), ByteString(os.toByteArray()))
   }
-   
 
   test("correctness - empty") {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
     println("start")
-    val (raw,compressed) = randomData(0)
+    val (raw, compressed) = randomData(0)
     val data2 = Await
       .result(
-        Source.single(compressed)
+        Source
+          .single(compressed)
           .via(lame.BlockGunzip(emitFromOffsetOfFirstBlock = 0))
           .runWith(Sink.seq),
         Duration.Inf
@@ -41,10 +45,11 @@ class BlockGunzipSuite extends FunSuite with Matchers {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
     println("start")
-    val (raw,compressed) = randomData(256)
+    val (raw, compressed) = randomData(256)
     val data2 = Await
       .result(
-        Source.single(compressed)
+        Source
+          .single(compressed)
           .via(lame.BlockGunzip(emitFromOffsetOfFirstBlock = 0))
           .runWith(Sink.seq),
         Duration.Inf
@@ -59,10 +64,11 @@ class BlockGunzipSuite extends FunSuite with Matchers {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
     println("start")
-    val (raw,compressed) = randomData(1024*90)
+    val (raw, compressed) = randomData(1024 * 90)
     val data2 = Await
       .result(
-        Source.single(compressed)
+        Source
+          .single(compressed)
           .via(lame.BlockGunzip(emitFromOffsetOfFirstBlock = 0))
           .runWith(Sink.seq),
         Duration.Inf
@@ -77,10 +83,11 @@ class BlockGunzipSuite extends FunSuite with Matchers {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
     println("start")
-    val (raw,compressed) = randomData(1024*1024)
+    val (raw, compressed) = randomData(1024 * 1024)
     val data2 = Await
       .result(
-        Source.single(compressed)
+        Source
+          .single(compressed)
           .via(lame.BlockGunzip(emitFromOffsetOfFirstBlock = 0))
           .runWith(Sink.seq),
         Duration.Inf
@@ -95,10 +102,11 @@ class BlockGunzipSuite extends FunSuite with Matchers {
     implicit val AS = akka.actor.ActorSystem()
     implicit val mat = ActorMaterializer()
     println("start")
-    val (raw,compressed) = randomData(1024*1024)
+    val (raw, compressed) = randomData(1024 * 1024)
     val data2 = Await
       .result(
-        Source.single(compressed)
+        Source
+          .single(compressed)
           .via(lame.BlockGunzip(emitFromOffsetOfFirstBlock = 5))
           .runWith(Sink.seq),
         Duration.Inf

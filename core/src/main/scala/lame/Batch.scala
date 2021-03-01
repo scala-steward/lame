@@ -9,7 +9,7 @@ object Batch {
   val reduceByteStrings = (s: Seq[ByteString]) => {
     val builder = ByteString.newBuilder
     s.foreach(b => builder.append(b))
-    builder.result
+    builder.result()
   }
   def strictBatchWeightedR[T](
       maxWeight: Long,
