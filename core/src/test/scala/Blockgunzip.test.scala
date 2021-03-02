@@ -1,7 +1,6 @@
 package lame
 import org.scalatest.funsuite._
 import org.scalatest.matchers.should._
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
@@ -24,7 +23,7 @@ class BlockGunzipSuite extends AnyFunSuite with Matchers {
 
   test("correctness - empty") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val (raw, compressed) = randomData(0)
     val data2 = Await
@@ -43,7 +42,7 @@ class BlockGunzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - short") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val (raw, compressed) = randomData(256)
     val data2 = Await
@@ -62,7 +61,7 @@ class BlockGunzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 90kbyte") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val (raw, compressed) = randomData(1024 * 90)
     val data2 = Await
@@ -81,7 +80,7 @@ class BlockGunzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 1MB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val (raw, compressed) = randomData(1024 * 1024)
     val data2 = Await
@@ -100,7 +99,7 @@ class BlockGunzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 1MB - emit from 5th") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val (raw, compressed) = randomData(1024 * 1024)
     val data2 = Await

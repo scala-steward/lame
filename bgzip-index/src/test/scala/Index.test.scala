@@ -2,7 +2,6 @@ package lame.index
 
 import org.scalatest.funsuite._
 import org.scalatest.matchers.should._
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
@@ -22,7 +21,6 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
 
   test("addressing - empty ") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
 
     val (_, index) = Await
       .result(
@@ -49,7 +47,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("addressing - 1x 48KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw1 = randomData(1024 * 48)
     val (compressedData, index) = Await
       .result(
@@ -93,7 +91,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
 
   test("addressing - 3x 48KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw1 = randomData(1024 * 48)
     val raw2 = randomData(1024 * 48)
     val raw3 = randomData(1024 * 48)
@@ -146,7 +144,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
 
   test("concat - 3x 48KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw1 = randomData(1024 * 48)
     val raw2 = randomData(1024 * 48)
     val raw3 = randomData(1024 * 48)

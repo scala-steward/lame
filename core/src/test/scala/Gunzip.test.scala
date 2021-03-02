@@ -1,7 +1,6 @@
 package lame
 import org.scalatest.funsuite._
 import org.scalatest.matchers.should._
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
@@ -38,7 +37,7 @@ class GunzipSuite extends AnyFunSuite with Matchers {
 
   test("correctness") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val data = Await.result(randomData(5).runWith(Sink.seq), Duration.Inf)
     val data2 = Await
@@ -57,7 +56,7 @@ class GunzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness on block gzip") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     println("start")
     val data = Await.result(randomData(5).runWith(Sink.seq), Duration.Inf)
     val data2 = Await
@@ -79,7 +78,7 @@ class GunzipSuite extends AnyFunSuite with Matchers {
 
   test("fragmented ByteStrings input") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val file = new File("tmp.data").toPath
     Await.result(
       randomData(1024 * 30).runWith(FileIO.toPath(file)),

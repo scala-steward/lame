@@ -52,7 +52,7 @@ val commonSettings = Seq(
   },
   fork := true,
   cancelable in Global := true,
-  version := "0.0.2"
+  version := "0.0.3"
 )
 
 commonSettings
@@ -64,7 +64,7 @@ lazy val core = (project in file("core"))
   .settings(
     name := "lame",
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-stream" % "2.5.23",
+      "com.typesafe.akka" %% "akka-stream" % "2.6.13",
       "org.scalatest" %% "scalatest" % "3.2.5" % Test,
       "com.github.samtools" % "htsjdk" % "2.19.0" % Test
     )

@@ -237,7 +237,7 @@ object BlockGunzip {
     val fileOffset = getFileOffset(virtualFilePointer)
     val blockOffset = getBlockOffset(virtualFilePointer)
     Source
-      .lazily(() => mkSourceFromFileOffset(fileOffset))
+      .lazySource(() => mkSourceFromFileOffset(fileOffset))
       .via(BlockGunzip(blockOffset, customInflater))
   }
 

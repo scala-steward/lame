@@ -1,7 +1,6 @@
 package lame
 import org.scalatest.funsuite._
 import org.scalatest.matchers.should._
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import scala.concurrent.Await
@@ -17,7 +16,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
 
   test("correctness - 256") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(256)
     val data2 = Await
       .result(
@@ -37,7 +36,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
 
   test("addressing - 256") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(256)
     val data2 = Await
       .result(
@@ -55,7 +54,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("addressing - empty") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val data2 = Await
       .result(
         Source
@@ -71,7 +70,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("addressing - 256 * 3") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(256)
     val data2 = Await
       .result(
@@ -88,7 +87,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("addressing - 90KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(1024 * 90)
     val data2 = Await
       .result(
@@ -109,7 +108,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("addressing - 270KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(1024 * 90)
     val data2 = Await
       .result(
@@ -149,7 +148,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("addressing - 3x 48KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw1 = randomData(1024 * 48)
     val raw2 = randomData(1024 * 48)
     val raw3 = randomData(1024 * 48)
@@ -191,7 +190,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 0") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(0)
     val data2 = Await
       .result(
@@ -210,7 +209,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 90KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(1024 * 90)
     val data2 = Await
       .result(
@@ -229,7 +228,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 270KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(1024 * 90)
     val data2 = Await
       .result(
@@ -248,7 +247,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
   }
   test("correctness - 120KB") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val raw = randomData(1024 * 40)
     val data2 = Await
       .result(
@@ -268,7 +267,7 @@ class BlockGzipSuite extends AnyFunSuite with Matchers {
 
   test("adjacent span") {
     implicit val AS = akka.actor.ActorSystem()
-    implicit val mat = ActorMaterializer()
+
     val a1 = List("a", "a", "b", "c", "d", "e", "h", "h")
     val f =
       Await.result(
