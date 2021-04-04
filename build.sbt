@@ -1,5 +1,22 @@
+inThisBuild(
+  List(
+    organization := "io.github.pityka",
+    homepage := Some(url("https://pityka.github.io/lame/")),
+    licenses := List(("MIT", url("https://opensource.org/licenses/MIT"))),
+    developers := List(
+      Developer(
+        "pityka",
+        "Istvan Bartha",
+        "bartha.pityu@gmail.com",
+        url("https://github.com/pityka/lame")
+      )
+    )
+  )
+)
+
 val commonSettings = Seq(
   scalaVersion := "2.13.5",
+  crossScalaVersions := Seq("2.12.13", "2.13.5"),
   parallelExecution in Test := false,
   scalacOptions ++= Seq(
     "-deprecation", // Emit warning and location for usages of deprecated APIs.
@@ -32,27 +49,8 @@ val commonSettings = Seq(
     "-Ywarn-unused:patvars", // Warn if a variable bound in a pattern is unused.
     "-Ywarn-unused:privates" // Warn if a private member is unused.
   ),
-  organization := "io.github.pityka",
-  licenses += ("MIT", url("https://opensource.org/licenses/MIT")),
-  publishTo := sonatypePublishTo.value,
-  pomExtra in Global := {
-    <url>https://pityka.github.io/lame/</url>
-        <scm>
-          <connection>scm:git:github.com/pityka/lame</connection>
-          <developerConnection>scm:git:git@github.com:pityka/lame</developerConnection>
-          <url>github.com/pityka/lame</url>
-        </scm>
-        <developers>
-          <developer>
-            <id>pityka</id>
-            <name>Istvan Bartha</name>
-            <url>https://pityka.github.io/lame/</url>
-          </developer>
-        </developers>
-  },
   fork := true,
-  cancelable in Global := true,
-  version := "0.0.3"
+  cancelable in Global := true
 )
 
 commonSettings
@@ -75,7 +73,7 @@ lazy val bgzipIndex = (project in file("bgzip-index"))
   .settings(
     name := "lame-bgzip-index",
     libraryDependencies ++= Seq(
-      "io.github.pityka" %% "intervaltree" % "1.1.2",
+      "io.github.pityka" %% "intervaltree" % "1.1.5",
       "org.scalatest" %% "scalatest" % "3.2.5" % "test"
     )
   )
